@@ -23,7 +23,7 @@ import (
 func main() {
 	ls := execute.ExecTask{
 		Command: "ls",
-		Args:    []string{"-l"},
+		Args:    []string{"-la"},
 		Cwd:     os.Getenv("HOME"),
 		Shell:   true,
 	}

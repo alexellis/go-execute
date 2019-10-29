@@ -33,13 +33,17 @@ func (et ExecTask) Execute() (ExecResult, error) {
 	var cmd *exec.Cmd
 
 	if et.Shell {
-		startArgs := strings.Split(et.Command, " ")
-		args := []string{"-c"}
-		for _, part := range startArgs {
-			args = append(args, part)
-		}
-		args = append(args)
+		var args []string
+		if len(et.Args) == 0 {
+			startArgs := strings.Split(et.Command, " ")
+			script := strings.Join(startArgs, " ")
+			args = append([]string{"-c"}, fmt.Sprintf("%s", script))
 
+		} else {
+			script := strings.Join(et.Args, " ")
+			args = append([]string{"-c"}, fmt.Sprintf("%s %s", et.Command, script))
+		}
+		fmt.Println(args)
 		cmd = exec.Command("/bin/bash", args...)
 	} else {
 		if strings.Index(et.Command, " ") > 0 {
