@@ -89,10 +89,21 @@ func (et ExecTask) Execute() (ExecResult, error) {
 		return ExecResult{}, err
 	}
 
-	fmt.Println("res: " + string(stdoutBytes))
-
-	return ExecResult{
+	res := ExecResult{
 		Stdout: string(stdoutBytes),
 		Stderr: string(stderrBytes),
-	}, nil
+	}
+
+	execErr := cmd.Wait()
+	if execErr != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			res.ExitCode = exitError.ExitCode()
+		}
+		fmt.Println("res: " + string(stderrBytes))
+		return res, execErr
+	}
+
+	fmt.Println("res: " + string(stdoutBytes))
+
+	return res, nil
 }
