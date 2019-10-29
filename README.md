@@ -36,4 +36,18 @@ func main() {
 }
 ```
 
+## v1 Status
+
+Known issues:
+
+* Exit code is not set
+
+## v2 Status
+
+TBD, will address exit code behaviour.
+
+## Contributing
+
+Commits must be signed off with `git commit -s`
+
 License: MIT
