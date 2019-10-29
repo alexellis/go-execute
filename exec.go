@@ -33,13 +33,7 @@ func (et ExecTask) Execute() (ExecResult, error) {
 	var cmd *exec.Cmd
 
 	if et.Shell {
-		startArgs := strings.Split(et.Command, " ")
-		args := []string{"-c"}
-		for _, part := range startArgs {
-			args = append(args, part)
-		}
-		args = append(args)
-
+		args := []string{"-c", et.Command}
 		cmd = exec.Command("/bin/bash", args...)
 	} else {
 		if strings.Index(et.Command, " ") > 0 {
