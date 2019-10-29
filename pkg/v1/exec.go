@@ -42,8 +42,9 @@ func (et ExecTask) Execute() (ExecResult, error) {
 		} else {
 			script := strings.Join(et.Args, " ")
 			args = append([]string{"-c"}, fmt.Sprintf("%s %s", et.Command, script))
+
 		}
-		fmt.Println(args)
+
 		cmd = exec.Command("/bin/bash", args...)
 	} else {
 		if strings.Index(et.Command, " ") > 0 {
@@ -95,8 +96,18 @@ func (et ExecTask) Execute() (ExecResult, error) {
 
 	fmt.Println("res: " + string(stdoutBytes))
 
+	exitCode := 0
+	execErr := cmd.Wait()
+	if execErr != nil {
+		if exitError, ok := execErr.(*exec.ExitError); ok {
+
+			exitCode = exitError.ExitCode()
+		}
+	}
+
 	return ExecResult{
-		Stdout: string(stdoutBytes),
-		Stderr: string(stderrBytes),
+		Stdout:   string(stdoutBytes),
+		Stderr:   string(stderrBytes),
+		ExitCode: exitCode,
 	}, nil
 }

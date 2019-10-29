@@ -8,14 +8,13 @@ A simple wrapper for Go's command execution packages.
 
 See Godoc [github.com/alexellis/go-execute](https://godoc.org/github.com/alexellis/go-execute)
 
-## Example
+## Example with "shell" and exit-code 0
 
 ```golang
 package main
 
 import (
 	"fmt"
-	"os"
 
 	execute "github.com/alexellis/go-execute/pkg/v1"
 )
@@ -23,8 +22,7 @@ import (
 func main() {
 	ls := execute.ExecTask{
 		Command: "ls",
-		Args:    []string{"-la"},
-		Cwd:     os.Getenv("HOME"),
+		Args:    []string{"-l"},
 		Shell:   true,
 	}
 	res, err := ls.Execute()
@@ -32,7 +30,32 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(res.Stdout, res.Stderr)
+	fmt.Printf("stdout: %q, stderr: %q, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
+}
+```
+
+## Example with "shell" and exit-code 1
+
+```golang
+package main
+
+import (
+	"fmt"
+
+	execute "github.com/alexellis/go-execute/pkg/v1"
+)
+
+func main() {
+	ls := execute.ExecTask{
+		Command: "exit 1",
+		Shell:   true,
+	}
+	res, err := ls.Execute()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("stdout: %q, stderr: %q, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
 }
 ```
 
