@@ -8,6 +8,41 @@ A simple wrapper for Go's command execution packages.
 
 See Godoc [github.com/alexellis/go-execute](https://godoc.org/github.com/alexellis/go-execute)
 
+
+## Example of exec without streaming to STDIO
+
+This example captures the values from stdout and stderr without relaying to the console. This means the values can be inspected and used for automation.
+
+```golang
+package main
+
+import (
+	"fmt"
+
+	execute "github.com/alexellis/go-execute/pkg/v1"
+)
+
+func main() {
+	cmd := execute.ExecTask{
+		Command:     "docker",
+		Args:        []string{"version"},
+		StreamStdio: false,
+	}
+
+	res, err := cmd.Execute()
+	if err != nil {
+		panic(err)
+	}
+
+	if res.ExitCode != 0 {
+		panic("Non-zero exit code: " + res.Stderr)
+	}
+
+	fmt.Printf("stdout: %s, stderr: %s, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
+}
+```
+
+
 ## Example with "shell" and exit-code 0
 
 ```golang
@@ -58,16 +93,6 @@ func main() {
 	fmt.Printf("stdout: %q, stderr: %q, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
 }
 ```
-
-## v1 Status
-
-Known issues:
-
-* Exit code is not set
-
-## v2 Status
-
-TBD, will address exit code behaviour.
 
 ## Contributing
 
