@@ -94,6 +94,14 @@ func main() {
 }
 ```
 
+## Used by
+
+* [openfaas-incubator/ofc-bootstrap](https://github.com/openfaas-incubator/ofc-bootstrap)
+* [openfaas/faas-cli](https://github.com/openfaas/faas-cli)
+* [alexellis/k3sup](https://github.com/alexellis/k3sup)
+
+Feel free to add a link to your own projects in a PR.
+
 ## Contributing
 
 Commits must be signed off with `git commit -s`
