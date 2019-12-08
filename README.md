@@ -9,6 +9,15 @@ A simple wrapper for Go's command execution packages.
 See Godoc [github.com/alexellis/go-execute](https://godoc.org/github.com/alexellis/go-execute)
 
 
+## go-execute users
+
+* [openfaas-incubator/ofc-bootstrap](https://github.com/openfaas-incubator/ofc-bootstrap)
+* [openfaas/faas-cli](https://github.com/openfaas/faas-cli)
+* [inlets/inletsctl](https://github.com/inlets/inletsctl)
+* [alexellis/k3sup](https://github.com/alexellis/k3sup)
+
+Feel free to add a link to your own projects in a PR.
+
 ## Example of exec without streaming to STDIO
 
 This example captures the values from stdout and stderr without relaying to the console. This means the values can be inspected and used for automation.
@@ -93,14 +102,6 @@ func main() {
 	fmt.Printf("stdout: %q, stderr: %q, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
 }
 ```
-
-## Used by
-
-* [openfaas-incubator/ofc-bootstrap](https://github.com/openfaas-incubator/ofc-bootstrap)
-* [openfaas/faas-cli](https://github.com/openfaas/faas-cli)
-* [alexellis/k3sup](https://github.com/alexellis/k3sup)
-
-Feel free to add a link to your own projects in a PR.
 
 ## Contributing
 
