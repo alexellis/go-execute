@@ -11,10 +11,11 @@ See Godoc [github.com/alexellis/go-execute](https://godoc.org/github.com/alexell
 
 ## go-execute users
 
-* [openfaas-incubator/ofc-bootstrap](https://github.com/openfaas-incubator/ofc-bootstrap)
+* [alexellis/arkade](https://github.com/alexellis/arkade)
 * [openfaas/faas-cli](https://github.com/openfaas/faas-cli)
 * [inlets/inletsctl](https://github.com/inlets/inletsctl)
 * [alexellis/k3sup](https://github.com/alexellis/k3sup)
+* [openfaas-incubator/ofc-bootstrap](https://github.com/openfaas-incubator/ofc-bootstrap)
 
 Feel free to add a link to your own projects in a PR.
 
