@@ -6,8 +6,7 @@ A simple wrapper for Go's command execution packages.
 
 ## Docs
 
-See Godoc [github.com/alexellis/go-execute](https://godoc.org/github.com/alexellis/go-execute)
-
+See docs at pkg.go.dev: [github.com/alexellis/go-execute](https://pkg.go.dev/github.com/alexellis/go-execute)
 
 ## go-execute users
 
