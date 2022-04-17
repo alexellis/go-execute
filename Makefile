@@ -1,2 +1,3 @@
-all:
-	go test -v ./v1/
+test:
+	go test -v ./... --cover
+
