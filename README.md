@@ -38,7 +38,7 @@ func main() {
 		StreamStdio: false,
 	}
 
-	res, err := cmd.Execute()
+	res, err := cmd.Execute(context.TODO())
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +50,6 @@ func main() {
 	fmt.Printf("stdout: %s, stderr: %s, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
 }
 ```
-
 
 ## Example with "shell" and exit-code 0
 
@@ -69,7 +68,7 @@ func main() {
 		Args:    []string{"-l"},
 		Shell:   true,
 	}
-	res, err := ls.Execute()
+	res, err := ls.Execute(context.TODO())
 	if err != nil {
 		panic(err)
 	}
@@ -94,11 +93,79 @@ func main() {
 		Command: "exit 1",
 		Shell:   true,
 	}
-	res, err := ls.Execute()
+	res, err := ls.Execute(context.TODO())
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Printf("stdout: %q, stderr: %q, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
+}
+```
+
+
+## Example with cancelling a long-running process after a timeout
+
+A sleep for 10s, which is cancelled after 100ms.
+
+```golang
+package main
+
+import (
+	"fmt"
+	"context"
+	execute "github.com/alexellis/go-execute/pkg/v1"
+	"time"
+)
+
+func main() {
+	ctx := context.Timeout(context.Background(), time.Millisecond * 100)
+
+	ls := execute.ExecTask{
+		Command: "sleep 10",
+		Shell:   true,
+		Context: ctx,
+	}
+
+	res, err := ls.Execute()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("stdout: %q, stderr: %q, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
+}
+```
+
+## Example with cancelling a long-running process when required
+
+A sleep for 10s, cancel using cancel() function
+
+```golang
+package main
+
+import (
+	"fmt"
+
+	execute "github.com/alexellis/go-execute/pkg/v1"
+	"time"
+	"context"
+)
+
+func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ls := execute.ExecTask{
+		Command: "sleep 10",
+		Shell:   true,
+		Context: ctx,
+	}
+
+	time.AfterFunc(time.Second * 1, func() {
+		cancel()
+	})
+	res, err := ls.Execute()
+	if err != nil {
+		panic(err)
+	}
 	fmt.Printf("stdout: %q, stderr: %q, exit-code: %d\n", res.Stdout, res.Stderr, res.ExitCode)
 }
 ```

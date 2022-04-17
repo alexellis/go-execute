@@ -2,11 +2,15 @@ package execute
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type ExecTask struct {
@@ -26,6 +30,9 @@ type ExecTask struct {
 
 	// PrintCommand prints the command before executing
 	PrintCommand bool
+
+	// Context can be used to cancel the execution of the command.
+	Context context.Context
 }
 
 type ExecResult struct {
@@ -35,6 +42,14 @@ type ExecResult struct {
 }
 
 func (et ExecTask) Execute() (ExecResult, error) {
+	ctx := et.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	child, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	argsSt := ""
 	if len(et.Args) > 0 {
 		argsSt = strings.Join(et.Args, " ")
@@ -51,7 +66,7 @@ func (et ExecTask) Execute() (ExecResult, error) {
 		if len(et.Args) == 0 {
 			startArgs := strings.Split(et.Command, " ")
 			script := strings.Join(startArgs, " ")
-			args = append([]string{"-c"}, fmt.Sprintf("%s", script))
+			args = append([]string{"-c"}, script)
 
 		} else {
 			script := strings.Join(et.Args, " ")
@@ -111,24 +126,53 @@ func (et ExecTask) Execute() (ExecResult, error) {
 	cmd.Stdout = stdoutWriters
 	cmd.Stderr = stderrWriters
 
-	startErr := cmd.Start()
+	g := errgroup.Group{}
 
-	if startErr != nil {
-		return ExecResult{}, startErr
-	}
-
+	success := false
 	exitCode := 0
-	execErr := cmd.Wait()
-	if execErr != nil {
-		if exitError, ok := execErr.(*exec.ExitError); ok {
-
-			exitCode = exitError.ExitCode()
+	g.Go(func() error {
+		if err := cmd.Start(); err != nil {
+			return err
 		}
+
+		if err := cmd.Wait(); err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				exitCode = exitErr.ExitCode()
+			}
+			return err
+		}
+
+		success = true
+		cancel()
+		return nil
+	})
+
+	g.Go(func() error {
+		<-child.Done()
+
+		ctxErr := child.Err()
+
+		if ctxErr != nil {
+			if success {
+				return nil
+			}
+
+			if err := cmd.Process.Kill(); err != nil {
+				log.Printf("failed to kill process: %v", err)
+			}
+			exitCode = 1
+			return ctxErr
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		return ExecResult{}, err
 	}
 
 	return ExecResult{
-		Stdout:   string(stdoutBuff.Bytes()),
-		Stderr:   string(stderrBuff.Bytes()),
+		Stdout:   stdoutBuff.String(),
+		Stderr:   stderrBuff.String(),
 		ExitCode: exitCode,
 	}, nil
 }
