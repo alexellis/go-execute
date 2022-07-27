@@ -59,7 +59,7 @@ func (et ExecTask) Execute() (ExecResult, error) {
 
 		}
 
-		cmd = exec.Command("/bin/bash", args...)
+		cmd = exec.Command("bash", args...)
 	} else {
 		if strings.Index(et.Command, " ") > 0 {
 			parts := strings.Split(et.Command, " ")

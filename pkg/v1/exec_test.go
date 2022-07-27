@@ -8,7 +8,7 @@ import (
 )
 
 func TestExec_WithShell(t *testing.T) {
-	task := ExecTask{Command: "/bin/ls /", Shell: true}
+	task := ExecTask{Command: "$(command -v ls) /", Shell: true}
 	res, err := task.Execute()
 	if err != nil {
 		t.Errorf(err.Error())
