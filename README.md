@@ -1,6 +1,6 @@
 ## go-execute
 
-A simple wrapper for Go's command execution packages.
+A wrapper for Go's command execution packages.
 
 `go get github.com/alexellis/go-execute/pkg/v1`
 
