@@ -22,9 +22,11 @@ type ExecTask struct {
 	// Args are the arguments to pass to the command. These are ignored if the
 	// Command contains arguments.
 	Args []string
-	// Shell run the command in a bash shell.
-	// Note that the system must have `/bin/bash` installed.
+	// Shell run the command in a (bash) shell.
 	Shell bool
+	// ShallPath is the path to the shell executable to use when Shell is true.
+	// If this is empty, the default `/bin/bash` is used.
+	ShallPath string
 	// Env is a list of environment variables to add to the current environment,
 	// these are used to override any existing environment variables.
 	Env []string
@@ -36,8 +38,20 @@ type ExecTask struct {
 	Stdin io.Reader
 
 	// StreamStdio prints stdout and stderr directly to os.Stdout/err as
-	// the command runs.
+	// the command runs. The results are still buffered and returned in the
+	// ExecResult.Stdout and ExecResult.Stderr fields.
 	StreamStdio bool
+
+	// StdOut allows specifying a writer to capture the command's stdout.
+	// This is an optional feature, if not set, the stdout will be captured in the
+	// ExecResult.Stdout field. When set, this will override the StreamStdio option and
+	// the ExecResult.Stdout field will be empty.
+	StdOut io.Writer
+	// StdErr allows specifying a writer to capture the command's stderr.
+	// This is an optional feature, if not set, the stderr will be captured in the
+	// ExecResult.Stderr field. When set, this will override the StreamStdio option and
+	// the ExecResult.Stderr field will be empty.
+	StdErr io.Writer
 
 	// PrintCommand prints the command before executing
 	PrintCommand bool
@@ -51,13 +65,9 @@ type ExecResult struct {
 }
 
 func (et ExecTask) Execute(ctx context.Context) (ExecResult, error) {
-	argsSt := ""
-	if len(et.Args) > 0 {
-		argsSt = strings.Join(et.Args, " ")
-	}
-
+	command, commandArgs := et.buildCommand()
 	if et.PrintCommand {
-		fmt.Println("exec: ", et.Command, argsSt)
+		fmt.Printf("exec: %s\n", strings.TrimSpace(fmt.Sprintf("%s %s", command, strings.Join(commandArgs, " "))))
 	}
 
 	// don't try to run if the context is already cancelled
@@ -69,70 +79,32 @@ func (et ExecTask) Execute(ctx context.Context) (ExecResult, error) {
 		}, ctx.Err()
 	}
 
-	var command string
-	var commandArgs []string
-	if et.Shell {
-		command = "/bin/bash"
-		if len(et.Args) == 0 {
-			// use Split and Join to remove any extra whitespace?
-			startArgs := strings.Split(et.Command, " ")
-			script := strings.Join(startArgs, " ")
-			commandArgs = append([]string{"-c"}, script)
-
-		} else {
-			script := strings.Join(et.Args, " ")
-			commandArgs = append([]string{"-c"}, fmt.Sprintf("%s %s", et.Command, script))
-		}
-	} else {
-		if strings.Contains(et.Command, " ") {
-			parts := strings.Split(et.Command, " ")
-			command = parts[0]
-			commandArgs = parts[1:]
-		} else {
-			command = et.Command
-			commandArgs = et.Args
-		}
-	}
-
 	cmd := exec.CommandContext(ctx, command, commandArgs...)
 	cmd.Dir = et.Cwd
+	cmd.Env = et.EnvVars()
 
-	if len(et.Env) > 0 {
-		overrides := map[string]bool{}
-		for _, env := range et.Env {
-			key := strings.Split(env, "=")[0]
-			overrides[key] = true
-			cmd.Env = append(cmd.Env, env)
-		}
-
-		for _, env := range os.Environ() {
-			key := strings.Split(env, "=")[0]
-
-			if _, ok := overrides[key]; !ok {
-				cmd.Env = append(cmd.Env, env)
-			}
-		}
-	}
+	// Configure the command IO
 	if et.Stdin != nil {
 		cmd.Stdin = et.Stdin
 	}
 
-	stdoutBuff := bytes.Buffer{}
-	stderrBuff := bytes.Buffer{}
+	var stdoutBuff bytes.Buffer
+	var stderrBuff bytes.Buffer
 
-	var stdoutWriters io.Writer
-	var stderrWriters io.Writer
-
+	cmd.Stdout = &stdoutBuff
+	cmd.Stderr = &stderrBuff
 	if et.StreamStdio {
-		stdoutWriters = io.MultiWriter(os.Stdout, &stdoutBuff)
-		stderrWriters = io.MultiWriter(os.Stderr, &stderrBuff)
-	} else {
-		stdoutWriters = &stdoutBuff
-		stderrWriters = &stderrBuff
+		cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuff)
+		cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuff)
 	}
 
-	cmd.Stdout = stdoutWriters
-	cmd.Stderr = stderrWriters
+	if et.StdOut != nil {
+		cmd.Stdout = et.StdOut
+	}
+
+	if et.StdErr != nil {
+		cmd.Stderr = et.StdErr
+	}
 
 	startErr := cmd.Start()
 	if startErr != nil {
@@ -153,4 +125,69 @@ func (et ExecTask) Execute(ctx context.Context) (ExecResult, error) {
 		ExitCode:  exitCode,
 		Cancelled: ctx.Err() == context.Canceled,
 	}, ctx.Err()
+}
+
+func (et ExecTask) buildCommand() (command string, commandArgs []string) {
+	if et.Shell {
+		command = "/bin/bash"
+		if strings.TrimSpace(et.ShallPath) != "" {
+			command = strings.TrimSpace(et.ShallPath)
+		}
+		if len(et.Args) == 0 {
+			// use Split and Join to remove any extra whitespace?
+			startArgs := strings.Split(et.Command, " ")
+			script := strings.Join(startArgs, " ")
+			commandArgs = append([]string{"-c"}, script)
+			return command, commandArgs
+
+		}
+
+		script := strings.Join(et.Args, " ")
+		commandArgs = append([]string{"-c"}, fmt.Sprintf("%s %s", et.Command, script))
+		return command, commandArgs
+	}
+
+	if strings.Contains(et.Command, " ") {
+		parts := strings.Split(et.Command, " ")
+		command = parts[0]
+		commandArgs = parts[1:]
+		return command, commandArgs
+
+	}
+
+	command = et.Command
+	commandArgs = et.Args
+	return command, commandArgs
+}
+
+// EnvVars returns the environment variables for the command.
+// When Env is non-empty, it will load the current environment variables
+// and override any that are specified in the Env field.
+func (et ExecTask) EnvVars() []string {
+	if len(et.Env) == 0 {
+		return os.Environ()
+	}
+
+	var envVars []string
+	overrides := map[string]bool{}
+	for _, env := range et.Env {
+		key := strings.Split(env, "=")[0]
+		overrides[key] = true
+		envVars = append(envVars, env)
+	}
+
+	for _, env := range os.Environ() {
+		key := strings.Split(env, "=")[0]
+
+		if _, ok := overrides[key]; !ok {
+			envVars = append(envVars, env)
+		}
+	}
+
+	return envVars
+}
+
+func (et ExecTask) String() string {
+	command, args := et.buildCommand()
+	return strings.TrimSpace(fmt.Sprintf("%s %s", command, strings.Join(args, " ")))
 }

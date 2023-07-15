@@ -10,6 +10,58 @@ import (
 	"time"
 )
 
+func TestExec_IsStringer(t *testing.T) {
+	cases := []struct {
+		name string
+		task ExecTask
+		want string
+	}{
+		{
+			name: "command without args",
+			task: ExecTask{Command: "/bin/ls"},
+			want: "/bin/ls",
+		},
+		{
+			name: "single command string",
+			task: ExecTask{Command: "/bin/ls /"},
+			want: "/bin/ls /",
+		},
+		{
+			name: "single command with default shell",
+			task: ExecTask{Command: "ls /", Shell: true},
+			want: "/bin/bash -c ls /",
+		},
+		{
+			name: "single command with custom shell",
+			task: ExecTask{Command: "ls /", Shell: true, ShallPath: "/bin/sh"},
+			want: "/bin/sh -c ls /",
+		},
+		{
+			name: "single command with args",
+			task: ExecTask{Command: "ls", Args: []string{"/"}},
+			want: "ls /",
+		},
+		{
+			name: "single command with args and default shell",
+			task: ExecTask{Command: "ls", Args: []string{"/"}, Shell: true},
+			want: "/bin/bash -c ls /",
+		},
+		{
+			name: "single command with args and custom shell",
+			task: ExecTask{Command: "ls", Args: []string{"/"}, Shell: true, ShallPath: "/bin/sh"},
+			want: "/bin/sh -c ls /",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.task.String() != tc.want {
+				t.Fatalf("want %s, but got %s", tc.want, tc.task.String())
+			}
+		})
+	}
+}
+
 func TestExec_ReturnErrorForUnknownCommand(t *testing.T) {
 	ctx := context.Background()
 
