@@ -19,7 +19,7 @@ func TestExec_ReturnErrorForUnknownCommand(t *testing.T) {
 		t.Fatalf("want error, but got nil")
 	}
 
-	if !strings.Contains(err.Error(), "no such file or directory") {
+	if !strings.Contains(strings.ToLower(err.Error()), "no such file or directory") {
 		t.Fatalf("want context.Canceled, but got %v", err)
 	}
 
@@ -64,7 +64,7 @@ func TestExec_ContextAlreadyCancelled(t *testing.T) {
 func TestExec_ContextCancelledDuringExecution(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		time.AfterFunc(time.Second, cancel)
+		time.AfterFunc(time.Millisecond*100, cancel)
 	}()
 
 	task := ExecTask{Command: "sleep 10"}
@@ -89,7 +89,7 @@ func TestExec_ContextCancelledDuringExecution(t *testing.T) {
 func TestExecShell_ContextCancelledDuringExecution(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		time.AfterFunc(time.Second, cancel)
+		time.AfterFunc(time.Millisecond*100, cancel)
 	}()
 
 	task := ExecTask{Command: "sleep 10", Shell: true}
@@ -264,8 +264,8 @@ func TestExec_CanStreamStderr(t *testing.T) {
 		t.Fatalf("want empty string Stdout, got %q", res.Stdout)
 	}
 
-	want := "ls: cannot access '/unknown/location/should/fail': No such file or directory\n"
-	if res.Stderr != want {
-		t.Fatalf("want %q Stderr, got %q", want, res.Stderr)
+	wantContains := "no such file or directory"
+	if !strings.Contains(strings.ToLower(res.Stderr), wantContains) {
+		t.Fatalf("want stderr to contain %q, got %q", wantContains, res.Stderr)
 	}
 }

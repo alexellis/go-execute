@@ -2,7 +2,7 @@
 
 A wrapper for Go's command execution packages.
 
-`go get github.com/alexellis/go-execute/pkg/v1`
+`go get github.com/alexellis/go-execute/v2`
 
 ## Docs
 
@@ -28,7 +28,7 @@ package main
 import (
 	"fmt"
 
-	execute "github.com/alexellis/go-execute/pkg/v1"
+	execute "github.com/alexellis/go-execute/v2"
 )
 
 func main() {
@@ -60,7 +60,7 @@ package main
 import (
 	"fmt"
 
-	execute "github.com/alexellis/go-execute/pkg/v1"
+	execute "github.com/alexellis/go-execute/v2"
 )
 
 func main() {
@@ -86,7 +86,7 @@ package main
 import (
 	"fmt"
 
-	execute "github.com/alexellis/go-execute/pkg/v1"
+	execute "github.com/alexellis/go-execute/v2"
 )
 
 func main() {
