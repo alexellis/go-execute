@@ -1,2 +1,2 @@
 all:
-	go test -v ./v1/
+	go test -v ./...

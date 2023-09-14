@@ -19,15 +19,19 @@ type ExecTask struct {
 	//  - Just a binary executable: `/bin/ls`
 	//  - Binary executable with arguments: `/bin/ls -la /`
 	Command string
+
 	// Args are the arguments to pass to the command. These are ignored if the
 	// Command contains arguments.
 	Args []string
+
 	// Shell run the command in a bash shell.
-	// Note that the system must have `/bin/bash` installed.
+	// Note that the system must have `bash` installed in the PATH or in /bin/bash
 	Shell bool
+
 	// Env is a list of environment variables to add to the current environment,
 	// these are used to override any existing environment variables.
 	Env []string
+
 	// Cwd is the working directory for the command
 	Cwd string
 
@@ -35,12 +39,23 @@ type ExecTask struct {
 	// being executed.
 	Stdin io.Reader
 
+	// PrintCommand prints the command before executing
+	PrintCommand bool
+
 	// StreamStdio prints stdout and stderr directly to os.Stdout/err as
 	// the command runs.
 	StreamStdio bool
 
-	// PrintCommand prints the command before executing
-	PrintCommand bool
+	// DisableStdioBuffer prevents any output from being saved in the
+	// TaskResult, which is useful for when the result is very large, or
+	// when you want to stream the output to another writer exclusively.
+	DisableStdioBuffer bool
+
+	// StdoutWriter when set will receive a copy of stdout from the command
+	StdOutWriter io.Writer
+
+	// StderrWriter when set will receive a copy of stderr from the command
+	StdErrWriter io.Writer
 }
 
 type ExecResult struct {
@@ -72,7 +87,18 @@ func (et ExecTask) Execute(ctx context.Context) (ExecResult, error) {
 	var command string
 	var commandArgs []string
 	if et.Shell {
-		command = "/bin/bash"
+
+		// On a NixOS system, /bin/bash doesn't exist at /bin/bash
+		// the default behavior of exec.Command is to look for the
+		// executable in PATH.
+
+		command = "bash"
+		// There is a chance that PATH is not populate or propagated, therefore
+		// when bash cannot be resolved, set it to /bin/bash instead.
+		if _, err := exec.LookPath(command); err != nil {
+			command = "/bin/bash"
+		}
+
 		if len(et.Args) == 0 {
 			// use Split and Join to remove any extra whitespace?
 			startArgs := strings.Split(et.Command, " ")
@@ -120,19 +146,27 @@ func (et ExecTask) Execute(ctx context.Context) (ExecResult, error) {
 	stdoutBuff := bytes.Buffer{}
 	stderrBuff := bytes.Buffer{}
 
-	var stdoutWriters io.Writer
-	var stderrWriters io.Writer
+	var stdoutWriters []io.Writer
+	var stderrWriters []io.Writer
+
+	// Always capture to a buffer
+	stdoutWriters = append(stdoutWriters, &stdoutBuff)
+	stderrWriters = append(stderrWriters, &stderrBuff)
 
 	if et.StreamStdio {
-		stdoutWriters = io.MultiWriter(os.Stdout, &stdoutBuff)
-		stderrWriters = io.MultiWriter(os.Stderr, &stderrBuff)
-	} else {
-		stdoutWriters = &stdoutBuff
-		stderrWriters = &stderrBuff
+		stdoutWriters = append(stdoutWriters, os.Stdout)
+		stderrWriters = append(stderrWriters, os.Stderr)
 	}
 
-	cmd.Stdout = stdoutWriters
-	cmd.Stderr = stderrWriters
+	if et.StdOutWriter != nil {
+		stdoutWriters = append(stdoutWriters, et.StdOutWriter)
+	}
+	if et.StdErrWriter != nil {
+		stderrWriters = append(stderrWriters, et.StdErrWriter)
+	}
+
+	cmd.Stdout = io.MultiWriter(stdoutWriters...)
+	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
 	startErr := cmd.Start()
 	if startErr != nil {

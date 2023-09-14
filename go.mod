@@ -1,3 +1,3 @@
-module github.com/alexellis/go-execute
+module github.com/alexellis/go-execute/v2
 
-go 1.19
+go 1.20
