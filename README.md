@@ -57,6 +57,7 @@ This example captures the values from stdout and stderr without relaying to the 
 package main
 
 import (
+	"context"
 	"fmt"
 
 	execute "github.com/alexellis/go-execute/v2"
@@ -69,7 +70,8 @@ func main() {
 		StreamStdio: false,
 	}
 
-	res, err := cmd.Execute()
+	ctx := context.Background()
+	res, err := cmd.Execute(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -89,6 +91,7 @@ func main() {
 package main
 
 import (
+	"context"
 	"fmt"
 
 	execute "github.com/alexellis/go-execute/v2"
@@ -100,7 +103,9 @@ func main() {
 		Args:    []string{"-l"},
 		Shell:   true,
 	}
-	res, err := ls.Execute()
+
+	ctx := context.Background()
+	res, err := ls.Execute(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -115,6 +120,7 @@ func main() {
 package main
 
 import (
+	"context"
 	"fmt"
 
 	execute "github.com/alexellis/go-execute/v2"
@@ -125,7 +131,9 @@ func main() {
 		Command: "exit 1",
 		Shell:   true,
 	}
-	res, err := ls.Execute()
+
+	ctx := context.Background()
+	res, err := ls.Execute(ctx)
 	if err != nil {
 		panic(err)
 	}
