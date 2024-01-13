@@ -59,6 +59,7 @@ type ExecTask struct {
 type ExecResult struct {
 	Stdout    string
 	Stderr    string
+	Error     error
 	ExitCode  int
 	Cancelled bool
 }
@@ -187,6 +188,7 @@ func (et ExecTask) Execute(ctx context.Context) (ExecResult, error) {
 	return ExecResult{
 		Stdout:    stdoutBuff.String(),
 		Stderr:    stderrBuff.String(),
+		Error:     execErr,
 		ExitCode:  exitCode,
 		Cancelled: ctx.Err() == context.Canceled,
 	}, ctx.Err()

@@ -27,6 +27,9 @@ func TestExec_ReturnErrorForUnknownCommand(t *testing.T) {
 	if res.Cancelled != false {
 		t.Fatalf("want not cancelled, but got true")
 	}
+	if res.Error != nil {
+		t.Fatalf("want nil error, but got %s", err.Error())
+	}
 	if res.ExitCode != 0 {
 		t.Fatalf("want exit code 0, but got %d", res.ExitCode)
 	}
@@ -56,6 +59,10 @@ func TestExec_ContextAlreadyCancelled(t *testing.T) {
 		t.Fatalf("want cancelled, but got false")
 	}
 
+	if res.Error == nil {
+		t.Fatalf("want non-nil error, but got nil")
+	}
+
 	if res.ExitCode != -1 {
 		t.Fatalf("want exit code -1, but got %d", res.ExitCode)
 	}
@@ -81,6 +88,10 @@ func TestExec_ContextCancelledDuringExecution(t *testing.T) {
 		t.Fatalf("want cancelled, but got false")
 	}
 
+	if res.Error == nil {
+		t.Fatalf("want non-nil error, but got nil")
+	}
+
 	if res.ExitCode != -1 {
 		t.Fatalf("want exit code -1, but got %d", res.ExitCode)
 	}
@@ -104,6 +115,10 @@ func TestExecShell_ContextCancelledDuringExecution(t *testing.T) {
 
 	if res.Cancelled != true {
 		t.Fatalf("want cancelled, but got false")
+	}
+
+	if res.Error == nil {
+		t.Fatalf("want non-nil error, but got nil")
 	}
 
 	if res.ExitCode != -1 {
